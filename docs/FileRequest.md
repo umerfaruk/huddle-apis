@@ -7,12 +7,13 @@ The File Request API is in Alpha
 # Status #
 | **Operation**                                                   | **Status** |
 |:----------------------------------------------------------------|:-----------|
-| [Retrieve a file request](#retrieve-a-file-request)             | Alpha      |
+| [Retrieve a file request](#retrieve-a-file-request)             |      Alpha |
 | [Retrieve all file requests in a workspace](#retrieve-all-file-requests-in-a-workspace) | Alpha |
 | [Retrieve all file requests for the current user](#retrieve-all-file-requests-for-the-current-user) | Alpha |
-| [Create a file request](#create-a-file-request)                 | Alpha      |
-| [Edit a file request](#edit-a-file-request)                     | Alpha      |
-| [Delete a file request](#delete-a-file-request)                 | Alpha      |
+| [Create a file request](#create-a-file-request)                 |      Alpha |
+| [Edit a file request](#edit-a-file-request)                     |      Alpha |
+| [Delete a file request](#delete-a-file-request)                 |      Alpha |
+| [Restore a file request](#restore-a-file-request)               |      Alpha |
 
 # Operations
 
@@ -25,12 +26,12 @@ The File Request API is in Alpha
 | `alternate` | The Web URI of the Task.                         |       `GET` |
 | `parent` | The URI of the [Workspace](Workspace).              |       `GET` |
 | `destination-folder` | The URI of the [Destination Folder](Folder). |  `GET` |
-| `edit`   | The URI to edit the Task.                           |      `POST` |
+| `edit`   | The URI to edit the Task.                           |       `PUT` |
 | `delete` | The URI to delete the Task.                         |    `DELETE` |
 | `audit-trail` | The URI of the Task's audit trail.             |       `GET` |
 | `comments` | The URI of the Task's comments.                 | `GET`, `POST` |
-| `attachments` | The URI of the Task's attachments.    | `GET`, `POST`, `PUT` |
-| `assignments` | The URI of the Task's assignments.    | `GET`, `POST`, `PUT` |
+| `attachments` | The URI of the Task's attachments.           | `GET`, `POST` |
+| `assignments` | The URI of the Task's assignments.           | `GET`, `POST` |
 
 ### Example
 
@@ -103,7 +104,7 @@ This endpoints returns all the tasks in a [Workspace](Workspace).
 Filters are query string parameters that are used to filter the tasks in your workspace, e.g.
 ```http
 GET /tasks/workspace/123?pagesize=50&skip=50&sort=title,asc&earliestduedate=2016-08-13&latestduedate=2016-09-01&statuses=NotStarted,Complete
-``` 
+```
 
 | **Parameter** | **Default value**                     | **Additional notes** |
 |:--------------|:--------------------------------------|:---------------------|
@@ -144,6 +145,7 @@ This response uses the [standard error codes](ErrorHandling) and returns standar
 
 ```http
 HTTP/1.1 200 OK
+Content-Type: application/vnd.huddle.data+xml
 ```
 ```xml
 <tasks>
@@ -222,6 +224,7 @@ This response uses the [standard error codes](ErrorHandling) and returns standar
 
 ```http
 HTTP/1.1 200 OK
+Content-Type: application/vnd.huddle.data+xml
 ```
 ```xml
 <tasks>
@@ -249,7 +252,7 @@ HTTP/1.1 200 OK
 #### Request
 ```http
 POST /tasks HTTP/1.1
-Accept: application/vnd.huddle.data+json
+Content-Type: application/json
 Authorization: OAuth2 frootymcnooty/vonbootycherooty
 ```
 ```json
@@ -307,8 +310,8 @@ Location: /tasks/12345
 
 #### Request
 ```http
-POST /tasks/12345 HTTP/1.1
-Accept: application/vnd.huddle.data+json
+PUT /tasks/12345 HTTP/1.1
+Content-Type: application/json
 Authorization: OAuth2 frootymcnooty/vonbootycherooty
 ```
 ```json
@@ -349,7 +352,38 @@ HTTP/1.1 204 No Content
 #### Request
 ```http
 DELETE /tasks/12345 HTTP/1.1
-Accept: application/vnd.huddle.data+json
+Authorization: OAuth2 frootymcnooty/vonbootycherooty
+```
+
+#### Response
+If successful, this method will return an empty response with a No Content status code and a [link header](Link#header) to restore the deleted Task.
+This response uses the [standard error codes](ErrorHandling) and returns standard [response headers](ResponseHeaders).
+
+```http
+HTTP/1.1 204 No Content
+Link: <...>;rel="restore"
+```
+
+### Error Responses ###
+
+| **Case**                                              | **Response Code** |                  **Error Code** |
+|-------------------------------------------------------|-------------------|---------------------------------|
+| Task does not exist                                   |   `404 Not Found` |                `ObjectNotFound` |
+| Task is deleted                                       |   `404 Not Found` |                `ObjectNotFound` |
+| User is not a member of the Workspace                 |   `403 Forbidden` |   `WorkspaceMembershipRequired` |
+| Workspace is locked                                   |   `403 Forbidden` |               `WorkspaceLocked` |
+| Workspace is archived                                 |   `403 Forbidden` |             `WorkspaceArchived` |
+| Workspace is deleted                                  | `400 Bad Request` |                    `BadRequest` |
+
+---
+
+## Restore a file request
+
+### Example
+
+#### Request
+```http
+DELETE /tasks/12345/restore HTTP/1.1
 Authorization: OAuth2 frootymcnooty/vonbootycherooty
 ```
 
@@ -366,6 +400,7 @@ HTTP/1.1 204 No Content
 | **Case**                                              | **Response Code** |                  **Error Code** |
 |-------------------------------------------------------|-------------------|---------------------------------|
 | Task does not exist                                   |   `404 Not Found` |                `ObjectNotFound` |
+| Task is not deleted                                   | `400 Bad Request` |                    `BadRequest` |
 | User is not a member of the Workspace                 |   `403 Forbidden` |   `WorkspaceMembershipRequired` |
 | Workspace is locked                                   |   `403 Forbidden` |               `WorkspaceLocked` |
 | Workspace is archived                                 |   `403 Forbidden` |             `WorkspaceArchived` |
